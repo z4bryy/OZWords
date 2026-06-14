@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AlphaRound — school category word game for LAN">
+  <meta name="theme-color" content="#6366f1">
+  <title>AlphaRound</title>
+  <link rel="stylesheet" href="styles.css?v=3">
+</head>
+<body>
+  <canvas id="bgCanvas" class="bg-canvas" aria-hidden="true"></canvas>
+  <canvas id="confettiCanvas" class="confetti-canvas" aria-hidden="true"></canvas>
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <div class="phase-overlay hidden" id="phaseOverlay" aria-hidden="true">
+    <div class="phase-burst"></div>
+    <div class="phase-overlay-card">
+      <span class="phase-icon" id="phaseIcon">🎲</span>
+      <span class="phase-text" id="phaseText"></span>
+    </div>
+  </div>
+
+  <div class="app">
+    <header class="hero">
+      <div class="header-bar">
+        <button type="button" class="icon-btn" id="soundBtn" aria-label="Toggle sound">🔊</button>
+        <div class="lang-switch" role="group">
+          <button type="button" class="lang-btn" data-lang="cs">CS</button>
+          <button type="button" class="lang-btn" data-lang="en">EN</button>
+        </div>
+      </div>
+      <div class="hero-mascot">
+        <span class="mascot-float mascot-a">📚</span>
+        <div class="logo-badge"><span>A</span></div>
+        <span class="mascot-float mascot-b">✏️</span>
+      </div>
+      <h1 id="appTitle">AlphaRound</h1>
+      <p class="subtitle" id="appSubtitle"></p>
+      <p class="tagline" id="appTagline"></p>
+    </header>
+
+    <nav class="stepper" id="stepper" aria-label="Game progress">
+      <div class="step" data-step="lobby"><span class="step-dot"></span><span class="step-label" data-i18n="stepLobby"></span></div>
+      <div class="step-line"></div>
+      <div class="step" data-step="spinning"><span class="step-dot"></span><span class="step-label" data-i18n="stepSpin"></span></div>
+      <div class="step-line"></div>
+      <div class="step" data-step="playing"><span class="step-dot"></span><span class="step-label" data-i18n="stepPlay"></span></div>
+      <div class="step-line"></div>
+      <div class="step" data-step="results"><span class="step-dot"></span><span class="step-label" data-i18n="stepResults"></span></div>
+    </nav>
+
+    <main>
+      <section class="card lobby-section animate-in" id="lobbySection">
+        <div id="joinForm">
+          <p class="section-title" id="joinRoomLabel"></p>
+
+          <p class="section-sub" id="pickPlayTypeLabel"></p>
+          <div class="play-type-grid" id="playTypeGrid">
+            <button type="button" class="play-type-card" data-play="offline">
+              <span class="play-type-icon">📴</span>
+              <span class="play-type-name" id="playOfflineLabel"></span>
+              <span class="play-type-desc" id="playOfflineDesc"></span>
+            </button>
+            <button type="button" class="play-type-card" data-play="online">
+              <span class="play-type-icon">🌐</span>
+              <span class="play-type-name" id="playOnlineLabel"></span>
+              <span class="play-type-desc" id="playOnlineDesc"></span>
+            </button>
+          </div>
+
+          <div class="school-tip" id="schoolTip">
+            <span class="tip-icon">💡</span>
+            <span id="schoolTipText"></span>
+          </div>
+          <input id="playerName" class="input-lg" type="text" maxlength="24" autocomplete="off">
+          <p class="section-sub" id="pickAvatarLabel"></p>
+          <div class="avatar-grid" id="avatarGrid"></div>
+          <button class="btn btn-primary btn-lg btn-shine" id="joinBtn" type="button"></button>
+          <p class="hint hidden" id="joinHint"></p>
+        </div>
+
+        <div class="lobby-panel hidden" id="lobbyPanel">
+          <div class="role-banner hidden" id="roleBanner"></div>
+          <div class="info-box">
+            <p class="room-status"><strong id="inRoomLabel"></strong> <span class="badge" id="roleBadge"></span></p>
+            <p class="muted" id="shareUrlLabel"></p>
+            <div class="url-row">
+              <code id="lanUrl" class="lan-url"></code>
+              <button type="button" class="btn btn-ghost" id="copyLinkBtn"></button>
+            </div>
+          </div>
+
+          <div class="activity-feed" id="activityFeed">
+            <p class="activity-title" id="activityTitle"></p>
+            <ul class="activity-list" id="activityList"></ul>
+          </div>
+
+          <div class="mode-section hidden" id="modeSection">
+            <p class="section-sub" id="pickModeLabel"></p>
+            <p class="mode-hints-note" id="modeHintsNote"></p>
+            <div class="mode-grid" id="modeGrid"></div>
+          </div>
+
+          <div class="players-box">
+            <h2><span id="playersLabel"></span> <span class="count-pill" id="playerCount">0</span></h2>
+            <div id="playerList" class="player-cards"></div>
+          </div>
+
+          <div class="host-actions hidden" id="hostActions">
+            <button class="btn btn-primary btn-lg btn-shine btn-pulse" id="startRoundBtn" type="button"></button>
+          </div>
+          <p class="wait-msg pulse-text hidden" id="waitMsg"></p>
+        </div>
+      </section>
+
+      <section class="card letter-section animate-in hidden" id="letterSection">
+        <div class="phase-badge" id="spinModeBadge"></div>
+        <p class="section-title" id="spinLabel"></p>
+        <div class="letter-stage">
+          <div class="letter-glow"></div>
+          <div class="letter-ring">
+            <div class="letter-display" id="letterDisplay" aria-live="polite">A</div>
+          </div>
+        </div>
+        <button class="btn btn-accent btn-lg btn-shine btn-pulse hidden" id="stopBtn" type="button">STOP</button>
+        <p class="wait-msg pulse-text" id="spinWaitMsg"></p>
+      </section>
+
+      <section class="card game-section animate-in hidden" id="gameSection">
+        <div class="game-topbar">
+          <div class="game-topbar-main">
+            <div class="letter-hero" aria-live="polite">
+              <span class="letter-hero-label" id="roundLetterLabel"></span>
+              <strong class="letter-hero-char" id="selectedLetter">?</strong>
+            </div>
+            <div class="game-badges">
+              <span class="meta-pill game-pill" id="gameModeBadge"></span>
+              <span class="meta-pill game-pill hidden" id="gameRoundBadge"></span>
+            </div>
+          </div>
+          <div class="timer-widget" id="timerWidget">
+            <svg class="timer-ring" viewBox="0 0 120 120">
+              <circle class="ring-bg" cx="60" cy="60" r="54"></circle>
+              <circle class="ring-fg" id="timerRingFg" cx="60" cy="60" r="54"></circle>
+            </svg>
+            <span class="timer-text" id="timer">2:00</span>
+          </div>
+        </div>
+
+        <div class="game-body">
+          <div class="game-status">
+            <p class="status-line" id="submitStatus"></p>
+            <div class="fields-progress-wrap">
+              <div class="fields-progress-track" aria-hidden="true">
+                <div class="fields-progress-fill" id="fieldsProgressFill"></div>
+              </div>
+              <p class="fields-progress" id="fieldsProgress"></p>
+            </div>
+            <div class="submit-avatars" id="submitAvatars"></div>
+          </div>
+          <p class="hints-bar hidden" id="hintsBar"></p>
+
+          <form id="gameForm" novalidate>
+            <div class="fields" id="fields"></div>
+            <button class="btn btn-primary btn-lg btn-shine game-submit" type="submit" id="submitBtn"></button>
+          </form>
+          <div class="result hidden" id="resultBox" role="status"></div>
+        </div>
+      </section>
+
+      <section class="card results-section animate-in hidden" id="resultsSection">
+        <h2 class="results-title" id="roundResultsTitle"></h2>
+        <div class="podium" id="podium"></div>
+        <div class="highlights" id="highlights"></div>
+        <p class="letter-chip center"><span id="resultsLetterLabel"></span> <strong id="resultsLetter">?</strong></p>
+        <div id="resultsContent" class="results-grid"></div>
+        <div class="scoreboard" id="scoreboard"></div>
+        <button class="btn btn-primary btn-lg btn-shine hidden" id="nextRoundBtn" type="button"></button>
+        <button class="btn btn-secondary btn-lg hidden" id="newGameBtn" type="button"></button>
+        <p class="wait-msg pulse-text hidden" id="resultsWaitMsg"></p>
+      </section>
+    </main>
+
+    <footer class="legal-footer">
+      <p id="legalNotice"></p>
+      <p class="credits">
+        <span id="creditsMadeBy"></span>
+        <a href="https://ozdigitals.com" target="_blank" rel="noopener noreferrer">ozdigitals.com</a>
+        ·
+        <a href="https://instagram.com/ozdigitals" target="_blank" rel="noopener noreferrer">Instagram @ozdigitals</a>
+        ·
+        <a href="https://github.com/z4bryy/OZWords" target="_blank" rel="noopener noreferrer">GitHub z4bryy</a>
+      </p>
+    </footer>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="hints-data.js?v=3"></script>
+  <script src="i18n.js?v=3"></script>
+  <script src="effects.js?v=3"></script>
+  <script src="offline.js?v=3"></script>
+  <script src="app.js?v=3"></script>
+</body>
+</html>

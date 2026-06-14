@@ -1,0 +1,14 @@
+{
+  "name": "alpharound",
+  "version": "1.0.0",
+  "description": "AlphaRound — open-source LAN category word game",
+  "license": "MIT",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
+  }
+}
