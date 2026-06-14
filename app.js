@@ -68,6 +68,7 @@ const els = {
   newGameBtn: document.getElementById("newGameBtn"),
   resultsWaitMsg: document.getElementById("resultsWaitMsg"),
   soundBtn: document.getElementById("soundBtn"),
+  homeBtn: document.getElementById("homeBtn"),
   stepper: document.getElementById("stepper"),
   schoolTipText: document.getElementById("schoolTipText"),
   activityList: document.getElementById("activityList"),
@@ -155,7 +156,23 @@ function leaveRoom() {
   els.joinHint.classList.add("hidden");
   setAppPhase("lobby");
   renderActivityFeed();
+  updateHomeButton();
   showSection(els.lobbySection);
+}
+
+function updateHomeButton() {
+  if (!els.homeBtn) return;
+  const show = joined || (gameState && gameState.phase !== "lobby");
+  els.homeBtn.classList.toggle("hidden", !show);
+  els.homeBtn.innerHTML = renderIcon("home", "icon-md");
+  els.homeBtn.setAttribute("aria-label", t("homeBtn"));
+  els.homeBtn.title = t("homeBtn");
+}
+
+function goHome() {
+  if (!joined && (!gameState || gameState.phase === "lobby")) return;
+  leaveRoom();
+  showToast(t("homeBtn"));
 }
 
 function updateSubmitButtonState(categories) {
@@ -693,6 +710,7 @@ function applyStaticText() {
   document.getElementById("creditsMadeBy").textContent = t("creditsMadeBy") + " ";
   if (els.joinRules) els.joinRules.textContent = t("gameRules");
   if (els.leaveBtn) els.leaveBtn.textContent = t("leaveRoom");
+  updateHomeButton();
   if (els.keyboardHint) els.keyboardHint.textContent = t("keyboardHint");
   initStaticIcons();
   updateSoundIcon(isSoundEnabled());
@@ -938,6 +956,7 @@ function applyState(state) {
   lastPhase = state.phase;
   lastRoundNumber = state.roundNumber;
   gameState = state;
+  updateHomeButton();
 
   if ((state.phase === "lobby" || state.phase === "final") && !joined) {
     renderLobby(state);
@@ -987,6 +1006,8 @@ els.soundBtn.addEventListener("click", () => {
   const on = toggleSound();
   updateSoundIcon(on);
 });
+
+els.homeBtn.addEventListener("click", () => goHome());
 
 els.leaveBtn.addEventListener("click", () => leaveRoom());
 

@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=9">
+  <link rel="stylesheet" href="styles.css?v=10">
 </head>
 <body>
   <canvas id="bgCanvas" class="bg-canvas" aria-hidden="true"></canvas>
@@ -28,7 +28,10 @@
   <div class="app">
     <header class="hero">
       <div class="header-bar">
-        <button type="button" class="icon-btn" id="soundBtn" aria-label="Toggle sound"></button>
+        <div class="header-bar-left">
+          <button type="button" class="icon-btn hidden" id="homeBtn" aria-label="Home"></button>
+          <button type="button" class="icon-btn" id="soundBtn" aria-label="Toggle sound"></button>
+        </div>
         <div class="lang-switch" role="group">
           <button type="button" class="lang-btn" data-lang="cs">CS</button>
           <button type="button" class="lang-btn" data-lang="en">EN</button>

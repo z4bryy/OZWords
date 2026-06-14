@@ -347,6 +347,12 @@ iconify-icon.icon-gold,
   margin-bottom: 0.75rem;
 }
 
+.header-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
 .icon-btn {
   width: 44px;
   height: 44px;

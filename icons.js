@@ -55,6 +55,7 @@ const ICONS = {
   hint: "lucide:lightbulb",
   check: "lucide:check",
   checkCircle: "lucide:circle-check",
+  home: "lucide:house",
   offline: "lucide:smartphone",
   online: "lucide:wifi",
   book: "lucide:book-open",
