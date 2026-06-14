@@ -5,34 +5,38 @@ const ALPHABETS = {
 
 const CATEGORY_KEYS = ["name", "city", "country", "animal", "plant", "food", "thing"];
 
-const AVATARS = ["🦊", "🐼", "🦁", "🐸", "🦄", "🐙", "🦋", "🐯", "🐨", "🐰", "🐶", "🐱", "🐻", "🐵", "🐧", "🦉"];
-
 const CATEGORY_ICONS = {
-  name: "👤",
-  city: "🏙️",
-  country: "🌍",
-  animal: "🐾",
-  plant: "🌿",
-  food: "🍎",
-  thing: "📦",
+  name: "name",
+  city: "city",
+  country: "country",
+  animal: "animal",
+  plant: "plant",
+  food: "food",
+  thing: "thing",
 };
 
 const MODES = {
-  classic: { icon: "⭐", color: "#6366f1", hintsEnabled: true, maxHints: 3, hintPenalty: 2 },
-  blitz: { icon: "⚡", color: "#f59e0b", hintsEnabled: false, maxHints: 0, hintPenalty: 0 },
-  mini: { icon: "🎯", color: "#10b981", hintsEnabled: true, maxHints: 2, hintPenalty: 1 },
-  school: { icon: "🏫", color: "#3b82f6", hintsEnabled: true, maxHints: 5, hintPenalty: 1 },
-  marathon: { icon: "🏆", color: "#ec4899", hintsEnabled: true, maxHints: 2, hintPenalty: 2 },
+  classic: { icon: "star", color: "#6366f1", hintsEnabled: true, maxHints: 3, hintPenalty: 2 },
+  blitz: { icon: "zap", color: "#f59e0b", hintsEnabled: false, maxHints: 0, hintPenalty: 0 },
+  mini: { icon: "target", color: "#10b981", hintsEnabled: true, maxHints: 2, hintPenalty: 1 },
+  school: { icon: "school", color: "#3b82f6", hintsEnabled: true, maxHints: 5, hintPenalty: 1 },
+  marathon: { icon: "trophy", color: "#ec4899", hintsEnabled: true, maxHints: 2, hintPenalty: 2 },
 };
 
 const STRINGS = {
   cs: {
-    title: "AlphaRound",
+    title: "OZWords",
     subtitle: "Slovní hra do školy — hrajte spolu v síti",
     tagline: "Rychlé kolo · LAN · Zábava pro celou třídu",
     legalNotice:
-      "AlphaRound je open-source hra podle tradičních pravidel. Bez chráněných názvů a cizích assetů.",
+      "OZWords je open-source hra podle tradičních pravidel. Bez chráněných názvů a cizích assetů.",
     creditsMadeBy: "Hra od",
+    gameRules:
+      "Piš slova na vylosované písmeno: Jméno · Město · Stát · Zvíře · Rostlina · Jídlo · Věc",
+    qrScan: "Naskenuj QR v telefonu",
+    leaveRoom: "Opustit místnost",
+    submitReady: "Vše hotovo — odešli!",
+    keyboardHint: "Enter = další pole",
     joinRoom: "Připoj se do místnosti",
     yourName: "Tvoje jméno",
     pickAvatar: "Vyber si postavičku",
@@ -70,13 +74,14 @@ const STRINGS = {
     time: "Čas",
     timeUp: "Čas!",
     submittedCount: "{done} / {total} hráčů odeslalo",
-    submitAnswers: "Odeslat odpovědi ✓",
-    submitted: "Odesláno ✓",
+    submitAnswers: "Odeslat odpovědi",
+    submitted: "Odesláno",
     fieldPlaceholder: "Slovo na {letter}…",
     fieldRequired: "{label} — vyplň!",
     fieldMustStart: "Musí začínat na {letter}",
     fixErrors: "Oprav zvýrazněná pole",
     answersSent: "Super! Čekáme na ostatní…",
+    scoringNow: "Vyhodnocujeme tvé odpovědi…",
     offlineDone: "Hotovo! Podívej se na své body.",
     roundResults: "Výsledky kola",
     finalResults: "Finále turnaje!",
@@ -90,8 +95,8 @@ const STRINGS = {
     speedKing: "Nejrychlejší",
     speedBonus: "+{n} bonus",
     podium: "Stupně vítězů",
-    toastSubmitted: "{avatar} {name} odeslal/a odpovědi",
-    toastFirst: "{avatar} {name} odeslal/a jako první!",
+    toastSubmitted: "{name} odeslal/a odpovědi",
+    toastFirst: "{name} odeslal/a jako první!",
     soundOn: "Zvuk zap",
     soundOff: "Zvuk vyp",
     statusReady: "Připraven",
@@ -109,7 +114,7 @@ const STRINGS = {
     teacherWelcome: "Jsi učitel — vedeš celou třídu. Vyber režim a spusť kolo.",
     studentWelcome: "Jsi ve hře! Počkej, až učitel spustí kolo.",
     activityTitle: "Co se děje",
-    activityJoin: "{avatar} {name} se připojil/a",
+    activityJoin: "{name} se připojil/a",
     activityStart: "Kolo právě začalo",
     activityEmpty: "Čekáme na spoluhráče…",
     fieldsProgress: "Vyplněno {done} / {total} kategorií",
@@ -140,12 +145,18 @@ const STRINGS = {
     },
   },
   en: {
-    title: "AlphaRound",
+    title: "OZWords",
     subtitle: "School word game — play together on LAN",
     tagline: "Quick rounds · LAN · Fun for the whole class",
     legalNotice:
-      "AlphaRound is an open-source game based on traditional rules. No trademarked names or third-party assets.",
+      "OZWords is an open-source game based on traditional rules. No trademarked names or third-party assets.",
     creditsMadeBy: "Game by",
+    gameRules:
+      "Write words for the drawn letter: Name · City · Country · Animal · Plant · Food · Thing",
+    qrScan: "Scan QR on your phone",
+    leaveRoom: "Leave room",
+    submitReady: "All done — submit!",
+    keyboardHint: "Enter = next field",
     joinRoom: "Join the room",
     yourName: "Your name",
     pickAvatar: "Pick your avatar",
@@ -183,13 +194,14 @@ const STRINGS = {
     time: "Time",
     timeUp: "Time's up!",
     submittedCount: "{done} / {total} players submitted",
-    submitAnswers: "Submit answers ✓",
-    submitted: "Submitted ✓",
+    submitAnswers: "Submit answers",
+    submitted: "Submitted",
     fieldPlaceholder: "Word for {letter}…",
     fieldRequired: "{label} — fill in!",
     fieldMustStart: "Must start with {letter}",
     fixErrors: "Fix highlighted fields",
     answersSent: "Nice! Waiting for others…",
+    scoringNow: "Scoring your answers…",
     offlineDone: "Done! Check your score.",
     roundResults: "Round results",
     finalResults: "Tournament finale!",
@@ -203,8 +215,8 @@ const STRINGS = {
     speedKing: "Speed king",
     speedBonus: "+{n} bonus",
     podium: "Winner podium",
-    toastSubmitted: "{avatar} {name} submitted",
-    toastFirst: "{avatar} {name} submitted first!",
+    toastSubmitted: "{name} submitted",
+    toastFirst: "{name} submitted first!",
     soundOn: "Sound on",
     soundOff: "Sound off",
     statusReady: "Ready",
@@ -222,7 +234,7 @@ const STRINGS = {
     teacherWelcome: "You are the teacher — lead the class. Pick a mode and start.",
     studentWelcome: "You are in! Wait for the teacher to start the round.",
     activityTitle: "Live activity",
-    activityJoin: "{avatar} {name} joined",
+    activityJoin: "{name} joined",
     activityStart: "Round just started",
     activityEmpty: "Waiting for classmates…",
     fieldsProgress: "Filled {done} / {total} categories",
@@ -254,8 +266,18 @@ const STRINGS = {
   },
 };
 
+function readStorage(key, legacyKey) {
+  const value = localStorage.getItem(key);
+  if (value !== null) return value;
+  const legacy = localStorage.getItem(legacyKey);
+  if (legacy !== null) {
+    localStorage.setItem(key, legacy);
+  }
+  return legacy;
+}
+
 function detectLang() {
-  const saved = localStorage.getItem("alpharound-lang");
+  const saved = readStorage("ozwords-lang", "alpharound-lang");
   if (saved === "cs" || saved === "en") return saved;
   return navigator.language.toLowerCase().startsWith("cs") ? "cs" : "en";
 }
@@ -269,7 +291,7 @@ function getLang() {
 function setLang(lang) {
   if (lang !== "cs" && lang !== "en") return;
   currentLang = lang;
-  localStorage.setItem("alpharound-lang", lang);
+  localStorage.setItem("ozwords-lang", lang);
   document.documentElement.lang = lang;
 }
 
@@ -338,20 +360,19 @@ function getActiveCategories(state) {
 }
 
 function getPlayType() {
-  const saved = localStorage.getItem("alpharound-play");
+  const saved = readStorage("ozwords-play", "alpharound-play");
   return saved === "offline" ? "offline" : "online";
 }
 
 function setPlayType(type) {
   if (type !== "offline" && type !== "online") return;
-  localStorage.setItem("alpharound-play", type);
+  localStorage.setItem("ozwords-play", type);
 }
 
 if (typeof module !== "undefined") {
   module.exports = {
     ALPHABETS,
     CATEGORY_KEYS,
-    AVATARS,
     CATEGORY_ICONS,
     MODES,
     getLang,

@@ -5,6 +5,7 @@ const path = require("path");
 const os = require("os");
 const {
   AVATARS,
+  normalizeAvatarId,
   getModeConfig,
   normalizeText,
   startsWithLetter,
@@ -262,21 +263,45 @@ function isHost(socketId) {
   return socketId === game.hostId;
 }
 
+function purgeDisconnectedPlayers() {
+  for (const id of game.players.keys()) {
+    if (!io.sockets.sockets.has(id)) {
+      game.players.delete(id);
+    }
+  }
+  if (game.hostId && !game.players.has(game.hostId)) {
+    game.hostId = pickHostId();
+    syncRoomLang();
+  }
+}
+
+function getConnectedPlayers() {
+  purgeDisconnectedPlayers();
+  return Array.from(game.players.values());
+}
+
 function allActivePlayersSubmitted() {
-  const active = Array.from(game.players.values());
+  const active = getConnectedPlayers();
   if (active.length === 0) return false;
   return active.every((player) => player.submitted);
 }
 
 function maybeFinishRoundEarly() {
   if (game.phase !== "playing") return false;
+  const connected = getConnectedPlayers();
+  if (connected.length === 0) return false;
+  if (connected.length === 1 && connected[0].submitted) {
+    finishRound();
+    return true;
+  }
   if (!allActivePlayersSubmitted()) return false;
   finishRound();
   return true;
 }
 
 function pickAvatar(requested) {
-  if (AVATARS.includes(requested)) return requested;
+  const id = normalizeAvatarId(requested);
+  if (AVATARS.includes(id)) return id;
   return AVATARS[Math.floor(Math.random() * AVATARS.length)];
 }
 
@@ -471,7 +496,7 @@ io.on("connection", (socket) => {
 
 server.listen(PORT, "0.0.0.0", () => {
   const addresses = getLocalAddresses();
-  console.log(`\nAlphaRound server running on port ${PORT}`);
+  console.log(`\nOZWords server running on port ${PORT}`);
   console.log("On this computer:  http://localhost:" + PORT);
   if (addresses.length) {
     console.log("For others on LAN:");

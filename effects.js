@@ -1,4 +1,4 @@
-let soundEnabled = localStorage.getItem("alpharound-sound") !== "off";
+let soundEnabled = (localStorage.getItem("ozwords-sound") ?? localStorage.getItem("alpharound-sound") ?? "on") !== "off";
 let audioCtx = null;
 let bgAnimId = null;
 let lastTickSecond = -1;
@@ -29,7 +29,7 @@ function playTone(freq, duration, type = "sine", volume = 0.08) {
 
 function toggleSound() {
   soundEnabled = !soundEnabled;
-  localStorage.setItem("alpharound-sound", soundEnabled ? "on" : "off");
+  localStorage.setItem("ozwords-sound", soundEnabled ? "on" : "off");
   if (soundEnabled) playTone(660, 0.12);
   return soundEnabled;
 }
@@ -138,7 +138,7 @@ function showPhaseBanner(icon, text) {
   const textEl = document.getElementById("phaseText");
   if (!overlay) return;
 
-  iconEl.textContent = icon;
+  setIcon(iconEl, icon);
   textEl.textContent = text;
   overlay.classList.remove("hidden");
   overlay.classList.add("show");
@@ -198,6 +198,22 @@ function showToast(message) {
   const el = document.createElement("div");
   el.className = "toast";
   el.textContent = message;
+  container.appendChild(el);
+  requestAnimationFrame(() => el.classList.add("show"));
+
+  setTimeout(() => {
+    el.classList.remove("show");
+    setTimeout(() => el.remove(), 350);
+  }, 2800);
+}
+
+function showToastHtml(html) {
+  const container = document.getElementById("toastContainer");
+  if (!container) return;
+
+  const el = document.createElement("div");
+  el.className = "toast toast-rich";
+  el.innerHTML = html;
   container.appendChild(el);
   requestAnimationFrame(() => el.classList.add("show"));
 

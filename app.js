@@ -25,6 +25,11 @@ const els = {
   roleBanner: document.getElementById("roleBanner"),
   lanUrl: document.getElementById("lanUrl"),
   copyLinkBtn: document.getElementById("copyLinkBtn"),
+  qrBox: document.getElementById("qrBox"),
+  qrCode: document.getElementById("qrCode"),
+  qrLabel: document.getElementById("qrLabel"),
+  leaveBtn: document.getElementById("leaveBtn"),
+  joinRules: document.getElementById("joinRules"),
   playerCount: document.getElementById("playerCount"),
   playerList: document.getElementById("playerList"),
   modeSection: document.getElementById("modeSection"),
@@ -67,6 +72,7 @@ const els = {
   schoolTipText: document.getElementById("schoolTipText"),
   activityList: document.getElementById("activityList"),
   hintsBar: document.getElementById("hintsBar"),
+  keyboardHint: document.getElementById("keyboardHint"),
   modeHintsNote: document.getElementById("modeHintsNote"),
   playTypeGrid: document.getElementById("playTypeGrid"),
   infoBox: document.querySelector(".info-box"),
@@ -87,6 +93,11 @@ function isOffline() {
 
 function isOnline() {
   return playType === "online";
+}
+
+function isSoloGame(state) {
+  if (!state) return isOffline();
+  return isOffline() || state.players.length <= 1;
 }
 
 function ensureOnlineSocket() {
@@ -110,6 +121,77 @@ function emitAction(action, payload) {
     return;
   }
   ensureOnlineSocket().emit(action, payload);
+}
+
+function updateSharePanel(url) {
+  if (!url || isOffline()) {
+    els.qrBox?.classList.add("hidden");
+    return;
+  }
+  els.qrBox?.classList.remove("hidden");
+  if (els.qrCode) {
+    els.qrCode.src = `https://api.qrserver.com/v1/create-qr-code/?size=132x132&data=${encodeURIComponent(url)}`;
+    els.qrCode.alt = url;
+  }
+  if (els.qrLabel) els.qrLabel.textContent = t("qrScan");
+}
+
+function leaveRoom() {
+  joined = false;
+  gameState = null;
+  activityLog.length = 0;
+  stopSpinAnimation();
+  stopTimer();
+
+  if (isOffline()) {
+    offlineEngine = null;
+  } else if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+
+  els.joinForm.classList.remove("hidden");
+  els.lobbyPanel.classList.add("hidden");
+  els.joinHint.classList.add("hidden");
+  setAppPhase("lobby");
+  renderActivityFeed();
+  showSection(els.lobbySection);
+}
+
+function updateSubmitButtonState(categories) {
+  if (!gameState || gameState.phase !== "playing") return;
+  const me = gameState.players.find((p) => p.id === gameState.you);
+  if (me?.submitted) return;
+
+  let filled = 0;
+  categories.forEach((key) => {
+    const field = els.fields.querySelector(`[data-key="${key}"]`);
+    if (field?.classList.contains("filled")) filled += 1;
+  });
+
+  const allFilled = filled === categories.length;
+  els.submitBtn.classList.toggle("btn-ready", allFilled);
+  els.submitBtn.classList.toggle("btn-pulse", allFilled);
+}
+
+function initStaticIcons() {
+  setIcon(document.getElementById("mascotA"), "book");
+  setIcon(document.getElementById("mascotB"), "pencil");
+  setIcon(document.getElementById("tipIcon"), "hint");
+  setIcon(document.getElementById("phaseIcon"), "dice");
+  document.querySelectorAll("[data-icon]").forEach((el) => setIcon(el, el.dataset.icon));
+  updateSoundIcon(isSoundEnabled());
+}
+
+function updateSoundIcon(on) {
+  els.soundBtn.innerHTML = renderIcon(on ? "soundOn" : "soundOff", "icon-md");
+  els.soundBtn.setAttribute("aria-label", on ? t("soundOn") : t("soundOff"));
+}
+
+function renderModeBadge(el, mode) {
+  if (!el) return;
+  const meta = MODES[mode] || MODES.classic;
+  el.innerHTML = `${renderIcon(meta.icon, "icon-sm")} ${modeLabel(mode)}`;
 }
 
 function renderPlayTypeSelector() {
@@ -161,7 +243,7 @@ function requestHint(category) {
     return;
   }
   emitAction("use-hint", { category });
-  showToast(t("hintBtn") + " 💡");
+  showToastHtml(`${renderIcon("hint", "icon-sm")} ${t("hintBtn")}`);
 }
 
 function applyRevealedHints(state) {
@@ -191,13 +273,15 @@ function bindOnlineEvents() {
       joined = true;
       if (!wasJoined) {
         sfxJoin();
-        showPhaseBanner("🏫", t("phaseLobby"));
+        showPhaseBanner("school", t("phaseLobby"));
       }
     }
 
     state.players.forEach((p) => {
       if (!prevNames.includes(p.id) && p.id !== state.you) {
-        pushActivity(t("activityJoin", { name: p.name, avatar: p.avatar || "🙂" }));
+        pushActivity(
+          `${renderAvatar(p.avatar, "icon-xs")} ${t("activityJoin", { name: p.name })}`
+        );
       }
     });
 
@@ -206,11 +290,8 @@ function bindOnlineEvents() {
 
   socket.on("player-submitted", ({ name, avatar, first }) => {
     if (isOffline()) return;
-    showToast(
-      first
-        ? t("toastFirst", { name, avatar: avatar || "⚡" })
-        : t("toastSubmitted", { name, avatar: avatar || "✓" })
-    );
+    const msg = first ? t("toastFirst", { name }) : t("toastSubmitted", { name });
+    showToastHtml(`${renderAvatar(avatar, "icon-xs")} ${msg}`);
   });
 
   socket.on("error-msg", (code) => {
@@ -321,10 +402,10 @@ function updateStepper(phase) {
 
 function getPhaseBanner(phase) {
   const map = {
-    spinning: { icon: "🎲", text: t("phaseSpin") },
-    playing: { icon: "✏️", text: t("phasePlay") },
-    results: { icon: "🎉", text: t("phaseResults") },
-    final: { icon: "🏆", text: t("phaseFinal") },
+    spinning: { icon: "dice", text: t("phaseSpin") },
+    playing: { icon: "pencil", text: t("phasePlay") },
+    results: { icon: "party", text: t("phaseResults") },
+    final: { icon: "trophy", text: t("phaseFinal") },
   };
   return map[phase] || null;
 }
@@ -370,7 +451,7 @@ function renderSubmitAvatars(state) {
   els.submitAvatars.innerHTML = state.players
     .map(
       (p) =>
-        `<div class="submit-avatar${p.submitted ? " done" : ""}" title="${p.name}">${p.avatar || "🙂"}</div>`
+        `<div class="submit-avatar${p.submitted ? " done" : ""}" title="${p.name}">${renderAvatar(p.avatar, "icon-md")}</div>`
     )
     .join("");
 }
@@ -380,11 +461,24 @@ function bindFieldInteractions(letter, lang, state) {
   els.fields.querySelectorAll(".field").forEach((field) => {
     const key = field.dataset.key;
     const input = field.querySelector("input");
+
     input.addEventListener("input", () => {
       const value = input.value.trim();
       const valid = value && startsWithLetter(value, letter, lang);
       field.classList.toggle("filled", !!valid);
       updateFieldsProgress(categories);
+    });
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      const inputs = [...els.fields.querySelectorAll("input:not([disabled])")];
+      const idx = inputs.indexOf(input);
+      if (idx >= 0 && idx < inputs.length - 1) {
+        inputs[idx + 1].focus();
+      } else {
+        els.submitBtn.focus();
+      }
     });
 
     const hintBtn = field.querySelector(".hint-btn");
@@ -410,12 +504,13 @@ function updateFieldsProgress(categories) {
   if (els.fieldsProgressFill) {
     els.fieldsProgressFill.style.width = `${Math.round((filled / total) * 100)}%`;
   }
+  updateSubmitButtonState(categories);
 }
 
 function renderAvatars() {
   els.avatarGrid.innerHTML = AVATARS.map(
-    (emoji) =>
-      `<button type="button" class="avatar-btn${emoji === selectedAvatar ? " selected" : ""}" data-avatar="${emoji}">${emoji}</button>`
+    (id) =>
+      `<button type="button" class="avatar-btn${id === selectedAvatar ? " selected" : ""}" data-avatar="${id}">${renderAvatar(id, "icon-lg")}</button>`
   ).join("");
 
   els.avatarGrid.querySelectorAll(".avatar-btn").forEach((btn) => {
@@ -433,7 +528,7 @@ function renderModeGrid(state) {
       const selected = state.mode === mode ? " selected" : "";
       return `
         <button type="button" class="mode-card${selected}" data-mode="${mode}" style="--mode-color:${meta.color}">
-          <span class="mode-icon">${meta.icon}</span>
+          <span class="mode-icon">${renderIcon(meta.icon, "icon-lg")}</span>
           <span class="mode-name">${modeLabel(mode)}</span>
           <span class="mode-desc">${modeDesc(mode)}</span>
         </button>
@@ -463,9 +558,9 @@ function renderPlayerCards(state) {
     .map(
       (player, i) => `
         <div class="player-card" style="animation-delay:${i * 0.06}s">
-          <span class="avatar">${player.avatar || "🙂"}</span>
+          <span class="avatar">${renderAvatar(player.avatar, "icon-lg")}</span>
           <div class="info">
-            <div class="name">${player.name}${player.isHost ? " ★" : ""}</div>
+            <div class="name">${player.name}${player.isHost ? ` ${renderIcon("crown", "icon-xs icon-gold")}` : ""}</div>
             <div class="score">${player.totalScore} ${t("pointsShort")}</div>
           </div>
           ${playerStatus(player, state.phase)}
@@ -483,21 +578,21 @@ function renderFields(letter, disabled, categories, state) {
   els.fields.innerHTML = categories
     .map((key, i) => {
       const label = categoryLabel(key);
-      const icon = CATEGORY_ICONS[key] || "📝";
+      const iconKey = CATEGORY_ICONS[key] || "note";
       const hintBtn = hintsEnabled
-        ? `<button type="button" class="hint-btn" title="${t("hintBtn")}" ${revealed[key] ? "disabled" : ""}>💡</button>`
+        ? `<button type="button" class="hint-btn" title="${t("hintBtn")}" ${revealed[key] ? "disabled" : ""}>${renderIcon("hint", "icon-sm")}</button>`
         : "";
       return `
         <div class="field" data-key="${key}" data-cat="${key}" style="animation-delay:${i * 0.05}s">
           <div class="field-row">
-            <span class="field-icon">${icon}</span>
+            <span class="field-icon">${renderIcon(iconKey, "icon-md")}</span>
             <div class="field-body">
               <label for="${key}">${label}</label>
               <input id="${key}" name="${key}" type="text" autocomplete="off" placeholder="${t("fieldPlaceholder", { letter })}" ${disabled ? "disabled" : ""}>
             </div>
             <div class="field-actions">
               ${hintBtn}
-              <span class="field-check" aria-hidden="true">✓</span>
+              <span class="field-check" aria-hidden="true">${renderIcon("check", "icon-sm")}</span>
             </div>
           </div>
           <p class="error-msg hidden"></p>
@@ -559,7 +654,7 @@ function renderPodium(totals) {
       const cls = placeClass[i] || "first";
       return `
         <div class="podium-place ${cls}">
-          <div class="podium-bar"><div class="podium-avatar">${player.avatar || "🙂"}</div></div>
+          <div class="podium-bar"><div class="podium-avatar">${renderAvatar(player.avatar, "icon-xl")}</div></div>
           <div class="podium-name">${player.name}</div>
           <div class="podium-score">${player.totalScore} ${t("pointsShort")}</div>
         </div>
@@ -588,7 +683,7 @@ function applyStaticText() {
   els.stopBtn.textContent = t("stop");
   els.spinWaitMsg.textContent = t("hostDrawing");
   document.getElementById("roundLetterLabel").textContent = t("roundLetter");
-  els.submitBtn.textContent = t("submitAnswers");
+  els.submitBtn.innerHTML = `${t("submitAnswers")} ${renderIcon("check", "icon-sm")}`;
   document.getElementById("roundResultsTitle").textContent = t("roundResults");
   document.getElementById("resultsLetterLabel").textContent = t("letter") + ":";
   els.nextRoundBtn.textContent = t("nextRound");
@@ -596,7 +691,11 @@ function applyStaticText() {
   els.resultsWaitMsg.textContent = t("waitHost");
   document.getElementById("legalNotice").textContent = t("legalNotice");
   document.getElementById("creditsMadeBy").textContent = t("creditsMadeBy") + " ";
-  els.soundBtn.textContent = isSoundEnabled() ? "🔊" : "🔇";
+  if (els.joinRules) els.joinRules.textContent = t("gameRules");
+  if (els.leaveBtn) els.leaveBtn.textContent = t("leaveRoom");
+  if (els.keyboardHint) els.keyboardHint.textContent = t("keyboardHint");
+  initStaticIcons();
+  updateSoundIcon(isSoundEnabled());
   renderPlayTypeSelector();
 
   document.querySelectorAll("[data-i18n]").forEach((el) => {
@@ -634,7 +733,10 @@ function renderLobby(state) {
 
     els.infoBox.classList.toggle("hidden", isOffline());
     els.activityFeed.classList.toggle("hidden", isOffline());
-    els.lanUrl.textContent = window.location.origin;
+    const shareUrl = window.location.origin;
+    els.lanUrl.textContent = shareUrl;
+    updateSharePanel(shareUrl);
+    els.leaveBtn.classList.remove("hidden");
     els.playerCount.textContent = String(state.players.length);
     renderPlayerCards(state);
 
@@ -653,12 +755,13 @@ function renderLobby(state) {
   } else {
     els.joinForm.classList.remove("hidden");
     els.lobbyPanel.classList.add("hidden");
+    els.leaveBtn.classList.add("hidden");
   }
 }
 
 function renderSpinning(state) {
   showSection(els.letterSection);
-  els.spinModeBadge.textContent = `${MODES[state.mode]?.icon || "⭐"} ${modeLabel(state.mode)}`;
+  renderModeBadge(els.spinModeBadge, state.mode);
   startSpinAnimation(getRoomLang(state));
 
   if (state.isHost) {
@@ -671,14 +774,14 @@ function renderSpinning(state) {
   }
 }
 
-function renderPlaying(state) {
+function renderPlaying(state, prevPhase) {
   showSection(els.gameSection);
   stopSpinAnimation();
 
   const roomLang = getRoomLang(state);
   const categories = getActiveCategories(state);
 
-  if (lastPhase === "spinning") {
+  if (prevPhase === "spinning") {
     els.selectedLetter.textContent = state.letter;
     els.letterDisplay.textContent = state.letter;
     els.letterDisplay.classList.add("reveal");
@@ -688,7 +791,7 @@ function renderPlaying(state) {
     els.selectedLetter.textContent = state.letter;
   }
 
-  els.gameModeBadge.textContent = `${MODES[state.mode]?.icon || "⭐"} ${modeLabel(state.mode)}`;
+  renderModeBadge(els.gameModeBadge, state.mode);
 
   if (state.targetRounds) {
     els.gameRoundBadge.textContent = t("roundProgress", {
@@ -708,6 +811,11 @@ function renderPlaying(state) {
 
   if (!els.fields.children.length || els.fields.querySelector("input")?.disabled !== alreadySubmitted) {
     renderFields(state.letter, alreadySubmitted, categories, state);
+    if (prevPhase === "spinning" && !alreadySubmitted) {
+      requestAnimationFrame(() => {
+        els.fields.querySelector("input:not([disabled])")?.focus({ preventScroll: true });
+      });
+    }
   } else {
     applyRevealedHints(state);
   }
@@ -716,14 +824,27 @@ function renderPlaying(state) {
   updateHintsBar(state);
 
   const submittedCount = state.players.filter((p) => p.submitted).length;
-  els.submitStatus.textContent = t("submittedCount", {
-    done: submittedCount,
-    total: state.players.length,
-  });
+  if (alreadySubmitted && isSoloGame(state)) {
+    els.submitStatus.textContent = t("scoringNow");
+  } else {
+    els.submitStatus.textContent = t("submittedCount", {
+      done: submittedCount,
+      total: state.players.length,
+    });
+  }
   renderSubmitAvatars(state);
 
   els.submitBtn.disabled = alreadySubmitted;
-  els.submitBtn.textContent = alreadySubmitted ? t("submitted") : t("submitAnswers");
+  if (alreadySubmitted) {
+    els.submitBtn.innerHTML = `${t("submitted")} ${renderIcon("checkCircle", "icon-sm")}`;
+  } else {
+    els.submitBtn.innerHTML = `${t("submitAnswers")} ${renderIcon("check", "icon-sm")}`;
+  }
+  els.submitBtn.classList.remove("btn-ready", "btn-pulse");
+  if (!alreadySubmitted) updateSubmitButtonState(categories);
+  if (els.keyboardHint) {
+    els.keyboardHint.classList.toggle("hidden", alreadySubmitted);
+  }
   els.resultBox.classList.add("hidden");
 }
 
@@ -747,24 +868,24 @@ function renderResults(state, prevPhase) {
   els.highlights.innerHTML = `
     <div class="highlight-card">
       <div class="label">${t("roundWinner")}</div>
-      <div class="value">${winner ? `${winner.avatar || "🏆"} ${winner.name}` : "—"}</div>
+      <div class="value">${winner ? `${renderAvatar(winner.avatar, "icon-sm")} ${winner.name}` : "—"}</div>
     </div>
     <div class="highlight-card">
       <div class="label">${t("speedKing")}</div>
-      <div class="value">${speed?.name ? `${speed.avatar || "⚡"} ${speed.name} (${t("speedBonus", { n: speed.bonus })})` : "—"}</div>
+      <div class="value">${speed?.name ? `${renderIcon("zap", "icon-sm icon-gold")} ${speed.name} (${t("speedBonus", { n: speed.bonus })})` : "—"}</div>
     </div>
   `;
 
   els.resultsContent.innerHTML = results.categories
     .map(
       (category, i) => `
-        <div class="result-category" style="animation-delay:${i * 0.06}s">
-          <h3>${CATEGORY_ICONS[category.key] || ""} ${categoryLabel(category.key)}</h3>
+        <div class="result-category" data-cat="${category.key}" style="animation-delay:${i * 0.06}s">
+          <h3>${renderIcon(CATEGORY_ICONS[category.key] || "note", "icon-sm")} ${categoryLabel(category.key)}</h3>
           <ul>
             ${category.answers
               .map(
                 (entry) =>
-                  `<li><span>${entry.avatar || ""} <strong>${entry.name}:</strong> ${entry.answer || t("emptyAnswer")}</span><span class="points">+${entry.points}</span></li>`
+                  `<li><span>${renderAvatar(entry.avatar, "icon-xs")} <strong>${entry.name}:</strong> ${entry.answer || t("emptyAnswer")}</span><span class="points">+${entry.points}</span></li>`
               )
               .join("")}
           </ul>
@@ -778,7 +899,7 @@ function renderResults(state, prevPhase) {
     <ol>
       ${results.totals
         .map((player) =>
-          `<li>${player.avatar || ""} ${t("scoreLine", {
+          `<li>${renderAvatar(player.avatar, "icon-xs")} ${t("scoreLine", {
             name: player.name,
             total: player.totalScore,
             round: player.roundScore,
@@ -836,7 +957,7 @@ function applyState(state) {
       renderSpinning(state);
       break;
     case "playing":
-      renderPlaying(state);
+      renderPlaying(state, prevPhase);
       break;
     case "results":
     case "final":
@@ -864,8 +985,10 @@ document.querySelectorAll(".lang-btn").forEach((btn) => {
 
 els.soundBtn.addEventListener("click", () => {
   const on = toggleSound();
-  els.soundBtn.textContent = on ? "🔊" : "🔇";
+  updateSoundIcon(on);
 });
+
+els.leaveBtn.addEventListener("click", () => leaveRoom());
 
 els.copyLinkBtn.addEventListener("click", async () => {
   try {
@@ -891,7 +1014,7 @@ els.joinBtn.addEventListener("click", () => {
     offlineEngine.join(name, selectedAvatar, getLang());
     joined = true;
     sfxJoin();
-    showPhaseBanner("📴", t("offlineWelcome"));
+    showPhaseBanner("offline", t("offlineWelcome"));
     return;
   }
 
@@ -925,13 +1048,27 @@ els.gameForm.addEventListener("submit", (e) => {
   if (!allValid) {
     els.resultBox.classList.add("error");
     els.resultBox.textContent = t("fixErrors");
+    const firstInvalid = els.fields.querySelector(".field.invalid input");
+    firstInvalid?.focus({ preventScroll: false });
+    firstInvalid?.scrollIntoView({ behavior: "smooth", block: "center" });
     return;
   }
 
   emitAction("submit-answers", { answers: values });
   sfxSubmit();
+
+  if (gameState?.phase === "results" || gameState?.phase === "final") {
+    return;
+  }
+
+  els.resultBox.classList.remove("hidden", "success", "error");
+  if (isSoloGame(gameState)) {
+    els.submitStatus.textContent = t("scoringNow");
+    return;
+  }
+
   els.resultBox.classList.add("success");
-  els.resultBox.textContent = isOffline() ? t("offlineDone") : t("answersSent");
+  els.resultBox.textContent = t("answersSent");
 });
 
 setLang(getLang());

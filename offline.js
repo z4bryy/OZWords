@@ -2,6 +2,9 @@ const CLIENT_MODES = {
   classic: {
     roundSeconds: 120,
     categories: ["name", "city", "country", "animal", "plant", "food", "thing"],
+    uniquePoints: 10,
+    duplicatePoints: 5,
+    speedBonus: 3,
     hintsEnabled: true,
     maxHints: 3,
     hintPenalty: 2,
@@ -10,6 +13,9 @@ const CLIENT_MODES = {
   blitz: {
     roundSeconds: 45,
     categories: ["name", "city", "country", "animal", "plant", "food", "thing"],
+    uniquePoints: 10,
+    duplicatePoints: 5,
+    speedBonus: 5,
     hintsEnabled: false,
     maxHints: 0,
     hintPenalty: 0,
@@ -18,6 +24,9 @@ const CLIENT_MODES = {
   mini: {
     roundSeconds: 60,
     categories: ["name", "city", "animal", "food"],
+    uniquePoints: 10,
+    duplicatePoints: 5,
+    speedBonus: 2,
     hintsEnabled: true,
     maxHints: 2,
     hintPenalty: 1,
@@ -26,6 +35,9 @@ const CLIENT_MODES = {
   school: {
     roundSeconds: 180,
     categories: ["name", "city", "country", "animal", "plant", "food", "thing"],
+    uniquePoints: 15,
+    duplicatePoints: 8,
+    speedBonus: 5,
     hintsEnabled: true,
     maxHints: 5,
     hintPenalty: 1,
@@ -34,6 +46,9 @@ const CLIENT_MODES = {
   marathon: {
     roundSeconds: 90,
     categories: ["name", "city", "country", "animal", "plant", "food", "thing"],
+    uniquePoints: 10,
+    duplicatePoints: 5,
+    speedBonus: 3,
     hintsEnabled: true,
     maxHints: 2,
     hintPenalty: 2,
@@ -104,6 +119,7 @@ function createOfflineGame(onUpdate) {
     const mode = getMode();
     const p = game.player;
     p.roundScore = 0;
+    p.speedBonus = 0;
     p.categoryPoints = {};
 
     for (const key of mode.categories) {
@@ -120,6 +136,12 @@ function createOfflineGame(onUpdate) {
       p.roundScore += points;
       p.totalScore += points;
     }
+
+    if (mode.speedBonus > 0) {
+      p.speedBonus = mode.speedBonus;
+      p.roundScore += mode.speedBonus;
+      p.totalScore += mode.speedBonus;
+    }
   }
 
   function buildResults() {
@@ -133,7 +155,9 @@ function createOfflineGame(onUpdate) {
       targetRounds: mode.targetRounds,
       isFinal: game.phase === "final",
       roundWinner: p ? { name: p.name, avatar: p.avatar, totalScore: p.totalScore, roundScore: p.roundScore } : null,
-      speedPlayer: null,
+      speedPlayer: p && p.speedBonus
+        ? { name: p.name, avatar: p.avatar, bonus: p.speedBonus }
+        : null,
       categories: mode.categories.map((key) => ({
         key,
         answers: [
@@ -265,6 +289,7 @@ function createOfflineGame(onUpdate) {
         game.player.answers[key] = String(answers?.[key] || "").trim();
       }
       game.player.submitted = true;
+      clearTimer();
       finishRound();
     },
     resetGame() {

@@ -63,7 +63,7 @@ const MODES = {
   },
 };
 
-const AVATARS = ["🦊", "🐼", "🦁", "🐸", "🦄", "🐙", "🦋", "🐯", "🐨", "🐰", "🐶", "🐱", "🐻", "🐵", "🐧", "🦉"];
+const { AVATARS, normalizeAvatarId } = require("./icons");
 
 function getModeConfig(mode) {
   return MODES[mode] || MODES.classic;
@@ -89,6 +89,7 @@ module.exports = {
   CATEGORY_KEYS,
   MODES,
   AVATARS,
+  normalizeAvatarId,
   getModeConfig,
   normalizeText,
   startsWithLetter,

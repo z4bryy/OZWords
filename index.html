@@ -2,11 +2,15 @@
 <html lang="cs">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="AlphaRound — school category word game for LAN">
-  <meta name="theme-color" content="#6366f1">
-  <title>AlphaRound</title>
-  <link rel="stylesheet" href="styles.css?v=3">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="OZWords — school category word game for LAN and offline">
+  <meta name="theme-color" content="#6d28d9">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>OZWords</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=9">
 </head>
 <body>
   <canvas id="bgCanvas" class="bg-canvas" aria-hidden="true"></canvas>
@@ -16,7 +20,7 @@
   <div class="phase-overlay hidden" id="phaseOverlay" aria-hidden="true">
     <div class="phase-burst"></div>
     <div class="phase-overlay-card">
-      <span class="phase-icon" id="phaseIcon">🎲</span>
+      <span class="phase-icon" id="phaseIcon"></span>
       <span class="phase-text" id="phaseText"></span>
     </div>
   </div>
@@ -24,18 +28,21 @@
   <div class="app">
     <header class="hero">
       <div class="header-bar">
-        <button type="button" class="icon-btn" id="soundBtn" aria-label="Toggle sound">🔊</button>
+        <button type="button" class="icon-btn" id="soundBtn" aria-label="Toggle sound"></button>
         <div class="lang-switch" role="group">
           <button type="button" class="lang-btn" data-lang="cs">CS</button>
           <button type="button" class="lang-btn" data-lang="en">EN</button>
         </div>
       </div>
       <div class="hero-mascot">
-        <span class="mascot-float mascot-a">📚</span>
-        <div class="logo-badge"><span>A</span></div>
-        <span class="mascot-float mascot-b">✏️</span>
+        <span class="mascot-float mascot-a" id="mascotA"></span>
+        <div class="logo-badge">
+          <span class="logo-ring"></span>
+          <span class="logo-text">OZ</span>
+        </div>
+        <span class="mascot-float mascot-b" id="mascotB"></span>
       </div>
-      <h1 id="appTitle">AlphaRound</h1>
+      <h1 id="appTitle">OZWords</h1>
       <p class="subtitle" id="appSubtitle"></p>
       <p class="tagline" id="appTagline"></p>
     </header>
@@ -58,19 +65,21 @@
           <p class="section-sub" id="pickPlayTypeLabel"></p>
           <div class="play-type-grid" id="playTypeGrid">
             <button type="button" class="play-type-card" data-play="offline">
-              <span class="play-type-icon">📴</span>
+              <span class="play-type-icon" data-icon="offline"></span>
               <span class="play-type-name" id="playOfflineLabel"></span>
               <span class="play-type-desc" id="playOfflineDesc"></span>
             </button>
             <button type="button" class="play-type-card" data-play="online">
-              <span class="play-type-icon">🌐</span>
+              <span class="play-type-icon" data-icon="online"></span>
               <span class="play-type-name" id="playOnlineLabel"></span>
               <span class="play-type-desc" id="playOnlineDesc"></span>
             </button>
           </div>
 
+          <div class="join-rules" id="joinRules"></div>
+
           <div class="school-tip" id="schoolTip">
-            <span class="tip-icon">💡</span>
+            <span class="tip-icon" id="tipIcon"></span>
             <span id="schoolTipText"></span>
           </div>
           <input id="playerName" class="input-lg" type="text" maxlength="24" autocomplete="off">
@@ -85,9 +94,17 @@
           <div class="info-box">
             <p class="room-status"><strong id="inRoomLabel"></strong> <span class="badge" id="roleBadge"></span></p>
             <p class="muted" id="shareUrlLabel"></p>
-            <div class="url-row">
-              <code id="lanUrl" class="lan-url"></code>
-              <button type="button" class="btn btn-ghost" id="copyLinkBtn"></button>
+            <div class="share-panel">
+              <div class="share-main">
+                <div class="url-row">
+                  <code id="lanUrl" class="lan-url"></code>
+                  <button type="button" class="btn btn-ghost" id="copyLinkBtn"></button>
+                </div>
+              </div>
+              <div class="qr-box" id="qrBox">
+                <img id="qrCode" class="qr-image" width="132" height="132" alt="">
+                <p class="qr-label" id="qrLabel"></p>
+              </div>
             </div>
           </div>
 
@@ -110,6 +127,7 @@
           <div class="host-actions hidden" id="hostActions">
             <button class="btn btn-primary btn-lg btn-shine btn-pulse" id="startRoundBtn" type="button"></button>
           </div>
+          <button class="btn btn-outline hidden" id="leaveBtn" type="button"></button>
           <p class="wait-msg pulse-text hidden" id="waitMsg"></p>
         </div>
       </section>
@@ -160,6 +178,7 @@
             <div class="submit-avatars" id="submitAvatars"></div>
           </div>
           <p class="hints-bar hidden" id="hintsBar"></p>
+          <p class="keyboard-hint" id="keyboardHint"></p>
 
           <form id="gameForm" novalidate>
             <div class="fields" id="fields"></div>
@@ -195,11 +214,14 @@
     </footer>
   </div>
 
+  <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
+  <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="hints-data.js?v=3"></script>
-  <script src="i18n.js?v=3"></script>
-  <script src="effects.js?v=3"></script>
-  <script src="offline.js?v=3"></script>
-  <script src="app.js?v=3"></script>
+  <script src="icons.js?v=8"></script>
+  <script src="hints-data.js?v=8"></script>
+  <script src="i18n.js?v=8"></script>
+  <script src="effects.js?v=8"></script>
+  <script src="offline.js?v=8"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>

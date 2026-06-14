@@ -1,7 +1,7 @@
 {
-  "name": "alpharound",
+  "name": "ozwords",
   "version": "1.0.0",
-  "description": "AlphaRound — open-source LAN category word game",
+  "description": "OZWords — open-source LAN category word game",
   "license": "MIT",
   "main": "server.js",
   "scripts": {
